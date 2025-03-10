@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  microservice1:
+    build:
+      context: ./service1
+      dockerfile: Dockerfile
+    volumes:
+      - nfs_volume:/data
+    networks:
+      - backend
+    ports:
+      - "5000:5000"
+
+  microservice2:
+    build:
+      context: ./service2
+      dockerfile: Dockerfile
+    volumes:
+      - nfs_volume:/data
+    networks:
+      - backend
+    ports:
+      - "5001:5001"
+
+volumes:
+  nfs_volume:
+    driver_opts:
+      type: "nfs"
+      o: "addr=<NFS_SERVER_IP>,rw"
+      device: ":/data"
+
+networks:
+  backend:
