@@ -21,3 +21,15 @@ RUN chmod 777 /mnt/nfs_share
 
 # Exposer le port, si nécessaire
 EXPOSE 5001
+
+# Ajouter une tâche cron pour exécuter le script à 12h00 tous les jours
+RUN echo "0 12 * * * python3 /app/service2.py >> /var/log/service2.log 2>&1" > /etc/cron.d/service2-cron
+
+# Configurer les permissions nécessaires pour cron
+RUN chmod 0644 /etc/cron.d/service2-cron && crontab /etc/cron.d/service2-cron
+
+# Créer un fichier log pour suivre l'exécution du cron job
+RUN touch /var/log/service2.log
+
+# Lancer cron en mode "foreground"
+CMD ["cron", "-f"]
