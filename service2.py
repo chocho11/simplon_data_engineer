@@ -5,6 +5,7 @@ import os
 
 datalake = "C:\\Users\\ten_d\\exos python\\" # c'est le dossier NFS servant de datalake aussi
 t_stmp = ''
+import_data_analytics = False
 
 def create_tbl(cur):
     cur.execute("""
@@ -200,44 +201,46 @@ for u in urls:
      
     
     if len(vals_insert) > 0:
+        if u == 'vente':
+            import_data_analytics = True
 
-        
         curseur.executemany("INSERT INTO " + u + " (" + fields_insert + ") VALUES (" +  interro_pts + ');', vals_insert)
         connexion.commit()
         time.sleep(5)
 
-curseur.execute("""
-    INSERT INTO chiffre_affaire (date, chiffre_affaire_total)
-    SELECT DATETIME('now') as date, SUM(quantite * prix)  AS chiffre_affaire_total
-    FROM vente
-    JOIN produit ON vente.id_produit = produit.id;            
-""")
+if import_data_analytics:
+    curseur.execute("""
+        INSERT INTO chiffre_affaire (date, chiffre_affaire_total)
+        SELECT DATETIME('now') as date, SUM(quantite * prix)  AS chiffre_affaire_total
+        FROM vente
+        JOIN produit ON vente.id_produit = produit.id;            
+    """)
 
-curseur.execute("""
-    INSERT INTO ventes_produits (date, produit, quantite, chiffre_affaire)
-    SELECT DATETIME('now') as date,
-        p.nom AS produit,
-        SUM(v.quantite) AS quantite_totale,
-        SUM(v.quantite * p.prix) AS chiffre_affaires
-    FROM vente v
-    JOIN produit p ON v.id_produit = p.id
-    GROUP BY p.nom;
-""")
+    curseur.execute("""
+        INSERT INTO ventes_produits (date, produit, quantite, chiffre_affaire)
+        SELECT DATETIME('now') as date,
+            p.nom AS produit,
+            SUM(v.quantite) AS quantite_totale,
+            SUM(v.quantite * p.prix) AS chiffre_affaires
+        FROM vente v
+        JOIN produit p ON v.id_produit = p.id
+        GROUP BY p.nom;
+    """)
 
-curseur.execute("""
-    INSERT INTO ventes_villes (date, ville, quantite, chiffre_affaire)
-    SELECT 
-        DATETIME('now') AS date,
-        magasin.ville,
-        SUM(vente.quantite) AS total_quantite,
-        SUM(vente.quantite * produit.prix) AS chiffre_affaires
-    FROM vente
-    JOIN magasin ON vente.id_magasin = magasin.id
-    JOIN produit ON vente.id_produit = produit.id
-    GROUP BY magasin.ville
-    ORDER BY total_quantite DESC;
+    curseur.execute("""
+        INSERT INTO ventes_villes (date, ville, quantite, chiffre_affaire)
+        SELECT 
+            DATETIME('now') AS date,
+            magasin.ville,
+            SUM(vente.quantite) AS total_quantite,
+            SUM(vente.quantite * produit.prix) AS chiffre_affaires
+        FROM vente
+        JOIN magasin ON vente.id_magasin = magasin.id
+        JOIN produit ON vente.id_produit = produit.id
+        GROUP BY magasin.ville
+        ORDER BY total_quantite DESC;
 
-""")
-connexion.commit()
-   
+    """)
+    connexion.commit()
+connexion.close()  
 print('Fini')
